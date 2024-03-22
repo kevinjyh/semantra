@@ -2,7 +2,9 @@ import os
 from abc import ABC, abstractmethod
 
 import numpy as np
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 import tiktoken
 import torch
 from dotenv import load_dotenv
@@ -114,7 +116,6 @@ class OpenAIModel(BaseModel):
                 "OpenAI API key not set. Please set the OPENAI_API_KEY environment variable or create a `.env` file with the key in the current working directory or the Semantra directory, which is revealed by running `semantra --show-semantra-dir`."
             )
         
-        openai.api_key = os.getenv("OPENAI_API_KEY")
 
         self.model_name = model_name
         self.num_dimensions = num_dimensions
@@ -141,8 +142,8 @@ class OpenAIModel(BaseModel):
 
     def embed(self, tokens, offsets, _is_query=False) -> "list[list[float]]":
         texts = [tokens[i:j] for i, j in offsets]
-        response = openai.Embedding.create(model=self.model_name, input=texts)
-        return np.array([data["embedding"] for data in response["data"]])
+        response = client.embeddings.create(model=self.model_name, input=texts)
+        return np.array([data["embedding"] for data in response.data])
 
 
 def zero_if_none(x):
