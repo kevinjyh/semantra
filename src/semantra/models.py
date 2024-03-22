@@ -106,7 +106,7 @@ class BaseModel(ABC):
 class OpenAIModel(BaseModel):
     def __init__(
         self,
-        model_name="text-embedding-ada-002",
+        model_name="text-embedding-3-small",
         num_dimensions=1536,
         tokenizer_name="cl100k_base",
     ):
@@ -142,11 +142,16 @@ class OpenAIModel(BaseModel):
 
     def embed(self, tokens, offsets, _is_query=False) -> "list[list[float]]":
         texts = [tokens[i:j] for i, j in offsets]
-        # print(f" [除錯] {type(texts)=}")
+        print("*" * 50)
+        # print(f"[除錯] {type(texts)=}")
         # print(f"[除錯] {len(texts)=}")
+        # print(f"[除錯] {len(texts[0])=}")
+        # print(f"[除錯] {len(texts[1])=}")
+        # print(f"[除錯] {len(texts[2])=}")
         # print(f"[除錯] {type(texts[0][0])=}")
         # print(f"[除錯] {self.model_name=}")
         response = client.embeddings.create(model=self.model_name, input=texts)
+        # print(f"[除錯] {response=}")
         return np.array([data["embedding"] for data in response.data])
 
 
@@ -323,7 +328,7 @@ models = {
         "pool_size": 50000,
         "pool_count": 2000,
         "get_model": lambda: OpenAIModel(
-            model_name="text-embedding-ada-002",
+            model_name="text-embedding-3-small",
             num_dimensions=1536,
             tokenizer_name="cl100k_base",
         ),
