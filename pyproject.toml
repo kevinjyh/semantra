@@ -27,8 +27,8 @@ build-backend = "poetry.core.masonry.api"
 "Repository" = "https://github.com/freedmand/semantra"
 "Bug Tracker" = "https://github.com/freedmand/semantra/issues"
 
-[project.scripts]
-semantra = "semantra.semantra:main"
+[tool.poetry.scripts]
+semantra = "src.semantra.semantra:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
