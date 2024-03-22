@@ -1,31 +1,26 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "semantra"
 version = "0.1.8"
 description = "A semantic search CLI tool"
-authors = [{name = "Dylan Freedman", email = "freedmand@gmail.com"}]
-readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
-dependencies = [
-  "annoy_fixed>=1.16.3",
-  "click>=8.1.3",
-  "Flask>=2.2.3",
-  "openai>=0.27.2",
-  "Pillow>=9.5.0",
-  "pypdfium2>=4.5.0",
-  "python-dotenv>=1.0.0",
-  "tiktoken>=0.3.3",
-  "torch>=2.0.0",
-  "tqdm>=4.65.0",
-  "transformers>=4.27.4"
-]
+authors = ["Dylan Freedman <freedmand@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.11, <=3.13"
+annoy_fixed = "^1.16.3"
+click = "^8.1.3"
+Flask = "^2.2.3"
+openai = "*"
+Pillow = "^9.5.0"
+pypdfium2 = "^4.5.0"
+python-dotenv = "^1.0.0"
+tiktoken = "^0.3.3"
+torch = "^2.0.0"
+tqdm = "^4.65.0"
+transformers = "^4.27.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [project.urls]
 "Homepage" = "https://github.com/freedmand/semantra"
