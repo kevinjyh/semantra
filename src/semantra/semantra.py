@@ -31,7 +31,7 @@ from .util import (
     write_embedding,
 )
 
-VERSION = pkg_resources.require("semantra")[0].version
+VERSION = "0.1.8" # pkg_resources.require("semantra")[0].version
 DEFAULT_ENCODING = "utf-8"
 DEFAULT_PORT = 8080
 

@@ -142,6 +142,10 @@ class OpenAIModel(BaseModel):
 
     def embed(self, tokens, offsets, _is_query=False) -> "list[list[float]]":
         texts = [tokens[i:j] for i, j in offsets]
+        # print(f" [除錯] {type(texts)=}")
+        # print(f"[除錯] {len(texts)=}")
+        # print(f"[除錯] {type(texts[0][0])=}")
+        # print(f"[除錯] {self.model_name=}")
         response = client.embeddings.create(model=self.model_name, input=texts)
         return np.array([data["embedding"] for data in response.data])
 
