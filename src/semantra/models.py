@@ -9,6 +9,7 @@ import tiktoken
 import torch
 from dotenv import load_dotenv
 from transformers import AutoModel, AutoTokenizer
+from typing import List, Iterable, Union
 
 load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
 
@@ -141,19 +142,25 @@ class OpenAIModel(BaseModel):
         return [self.tokenizer.decode([token]) for token in tokens]
 
     def embed(self, tokens, offsets, _is_query=False) -> "list[list[float]]":
-        texts = [tokens[i:j] for i, j in offsets]
-        print("*" * 50)
-        # print(f"[除錯] {type(texts)=}")
-        # print(f"[除錯] {len(texts)=}")
-        # print(f"[除錯] {len(texts[0])=}")
-        # print(f"[除錯] {len(texts[1])=}")
-        # print(f"[除錯] {len(texts[2])=}")
-        # print(f"[除錯] {type(texts[0][0])=}")
-        # print(f"[除錯] {self.model_name=}")
+        # print(f"  [除錯] {offsets=}")
+        texts = [tokens[i:j] for i, j in offsets] # TODO [:155] 限制長度
+        # self._check_input(input=texts)
         response = client.embeddings.create(model=self.model_name, input=texts)
-        # print(f"[除錯] {response=}")
-        return np.array([data["embedding"] for data in response.data])
+        # print(f"  [除錯] {response=}")
+        return np.array(response.data[0].embedding)
 
+    def _check_input(self, input: Union[str, List[str], Iterable[int], Iterable[Iterable[int]]]):
+        print(f" [除錯]", end="")
+        if isinstance(input, str):
+            print("input is a string")
+        elif isinstance(input, list) and all(isinstance(i, str) for i in input):
+            print("input is a list of strings")
+        elif isinstance(input, Iterable) and all(isinstance(i, int) for i in input):
+            print("input is an iterable of integers")
+        elif isinstance(input, Iterable) and all(isinstance(i, Iterable) and all(isinstance(j, int) for j in i) for i in input):
+            print("input is an iterable of iterables of integers")
+        else:
+            print("input does not match any of the expected types")
 
 def zero_if_none(x):
     return 0 if x is None else x

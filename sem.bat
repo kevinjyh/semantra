@@ -1,0 +1,1 @@
+poetry run semantra --model openai .\regulations\政府採購法.pdf

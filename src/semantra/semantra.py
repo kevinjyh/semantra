@@ -136,6 +136,26 @@ def process(
     no_confirm,
     encoding,
 ):
+    """
+    處理文本內容並生成相應的詞嵌入（embeddings）的。首先，它會檢查指定的目錄是否存在，如果不存在，則會創建該目錄。
+    然後，它會獲取文件的MD5值和配置信息，並根據這些信息生成一些文件名。
+
+    如果強制重新計算或者詞標記（tokens）文件不存在，則會從原始文本中提取詞標記。這些詞標記會被用來生成文本塊（text chunks），
+    並將其寫入到文件中。如果詞標記文件已經存在，則會直接從文件中讀取文本塊。
+
+    接著，程式碼會根據配置參數來獲取嵌入偏移量（embedding offsets）。然後，它會生成一個完整的配置，包含了原始配置以及一些額外的詳細信息。
+
+    如果強制重新計算或者配置文件不存在，並且每個詞標記的成本不為None，則會提示用戶詞嵌入的成本。無論如何，都會將完整的配置寫入到配置文件中。
+
+    然後，程式碼會計算詞嵌入。如果詞嵌入文件已經存在，並且不需要使用Annoy或者Annoy文件也存在，則會跳過該步驟。
+    否則，會從文本塊中提取詞標記，並生成詞嵌入。這些詞嵌入會被寫入到文件中，並且如果需要使用Annoy，則還會寫入到Annoy數據庫中。
+
+    最後，程式碼會返回一個Document對象，該對象包含了所有的配置信息、文件名、詞嵌入等信息。
+
+    在這段程式碼中，還定義了一個Document類，該類包含了一些屬性，如文件名、MD5值、配置信息、詞嵌入文件名等。
+    此外，該類還定義了一些屬性方法，用於獲取文本內容、文本塊、詞嵌入數量、詞嵌入數據庫和詞嵌入等。
+    """
+
     # Check if semantra dir exists
     if not os.path.exists(semantra_dir):
         os.makedirs(semantra_dir)
@@ -682,6 +702,25 @@ def main(
 
     @app.route("/api/query", methods=["POST"])
     def query():
+        """
+        這段程式碼定義了一個 Flask 路由 /api/query，該路由接受 POST 請求。當此路由被訪問時，它會執行 query 函數。
+
+        query 函數的主要工作流程如下：
+
+            1. 從請求的 JSON 數據中提取 "queries" 和 "preferences"。
+
+            2. 檢查 svm 和 annoy 變數。如果 svm 為真，則調用 querysvm 函數並返回結果。如果 annoy 為真，則調用 queryann 函數並返回結果。
+
+            3. 如果 svm 和 annoy 都不為真，則使用 model.embed_queries_and_preferences 函數來獲取查詢和偏好的嵌入向量。
+
+            4. 對每個文檔，它會獲取文檔的嵌入向量，並使用餘弦相似度來獲取最近鄰。
+
+            5. 對於每個文檔，它會提取最相似的文本塊，並將其與其他相關信息一起存儲在結果中。
+
+            6. 最後，它會將結果排序並返回 JSON 格式的結果。
+
+        這段程式碼的主要目的是將查詢和偏好嵌入到文檔中，並找出與查詢和偏好最相似的文本塊。
+        """
         queries = request.json["queries"]
         preferences = request.json["preferences"]
         if svm:
@@ -725,6 +764,26 @@ def main(
 
     @app.route("/api/querysvm", methods=["POST"])
     def querysvm():
+        """
+        這段程式碼是在 Flask 應用中定義一個路由 /api/querysvm，該路由接受 POST 請求。
+        當此路由被訪問時，它會執行 querysvm 函數。
+
+        querysvm 函數的主要工作流程如下：
+
+            1. 從請求的 JSON 數據中提取 "queries" 和 "preferences"。
+
+            2. 使用 model.embed_queries_and_preferences 函數來獲取查詢和偏好的嵌入向量。
+
+            3. 對每個文檔，它會將文檔的嵌入向量和查詢嵌入向量結合，並使用這些數據來訓練一個支持向量機 (SVM) 分類器。
+
+            4. 使用訓練好的 SVM 分類器來推斷相似度，並將結果排序。
+
+            5. 對於每個文檔，它會提取最相似的文本塊，並將其與其他相關信息一起存儲在結果中。
+
+            6. 最後，它會將結果排序並返回 JSON 格式的結果。
+
+        這段程式碼的主要目的是將查詢和偏好嵌入到文檔中，並使用 SVM 來找出與查詢和偏好最相似的文本塊。
+        """
         from sklearn import svm
 
         queries = request.json["queries"]
@@ -778,6 +837,23 @@ def main(
 
     @app.route("/api/queryann", methods=["POST"])
     def queryann():
+        """
+        這段程式碼是一個 Flask 應用程式的一部分，它定義了一個路由 /api/queryann，
+        該路由接受 POST 請求。當此路由被訪問時，它會執行 queryann 函數。
+
+        在 queryann 函數中，首先從請求的 JSON 資料中取出 "queries" 和 "preferences"。
+        然後，使用 model.embed_queries_and_preferences 方法來獲取查詢和偏好的嵌入向量。
+
+        接著，對於每個文檔，它會從文檔中取出嵌入數據庫、文本塊和偏移量。
+        然後，使用 embedding_db.get_nns_by_vector 方法來獲取與嵌入向量最接近的結果。
+
+        對於每個結果，它會創建一個包含文本、距離、偏移量、索引、文件名、
+        查詢和偏好的字典，並將其添加到子結果列表中。
+
+        最後，它會將所有的結果排序，並將其轉換為 JSON 格式返回。
+
+        這段程式碼的主要目的是處理查詢和偏好，並返回與之最相關的文檔。
+        """
         queries = request.json["queries"]
         preferences = request.json["preferences"]
 
@@ -812,6 +888,23 @@ def main(
 
     @app.route("/api/explain", methods=["POST"])
     def explain():
+        """
+        這段程式碼定義了一個 Flask 應用的路由，該路由對應於一個名為 /api/explain 的 HTTP 端點。
+        當這個端點接收到 POST 請求時，它會執行 explain 函數的內容。
+
+        explain 函數首先從請求的 JSON 數據中提取出文件名、偏移量、查詢和偏好。
+        然後，它使用這些數據來生成一個嵌入向量，該向量是由模型根據查詢和偏好生成的。
+
+        接下來，函數定義了一些輔助函數，用於對文本進行分割和評分。
+        get_splits 函數將文本分割成多個窗口，exclude_window 函數則將特定窗口的文本從整體文本中排除。
+        get_highest_ranked_split 函數對每個窗口進行評分，並將它們按照評分排序。
+        as_tokens 函數則將這些窗口轉換成一個包含文本和類型的字典列表。
+
+        最後，函數使用這些輔助函數來找到評分最高的窗口，並將其轉換成字典列表。
+        這個列表然後被轉換成 JSON 格式，並作為 HTTP 響應返回。
+
+        這段程式碼的主要目的是對給定的文本進行分析，並找出其中與查詢和偏好最相關的部分。
+        """
         filename = request.json["filename"]
         offset = request.json["offset"]
         tokens = documents[filename].text_chunks[offset[0] : offset[1]]
@@ -895,6 +988,20 @@ def main(
 
     @app.route("/api/pdfpositions", methods=["GET"])
     def pdfpositions():
+        """
+        這段程式碼定義了一個名為 pdfpositions 的路由，該路由對應於一個 HTTP GET 請求。
+        當用戶訪問 /api/pdfpositions 並提供適當的查詢參數（filename）時，此路由將返回一個 PDF 文件的位置信息。
+
+        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。
+        get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；
+        否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
+
+        然後，程式碼檢查文件的類型是否為 "pdf"。如果是，則返回文件的位置信息；
+        否則，返回一個空列表。位置信息和空列表都被封裝在一個 JSON 響應中，以便於用戶在客戶端處理。
+
+        這段程式碼的主要用途是提供一種方式，讓用戶能夠獲取 PDF 文件的位置信息，
+        這些信息可能包括每個頁面的大小、每個元素的位置等。
+        """
         filename = request.args.get("filename")
         content = get_content(filename)
         if content.filetype == "pdf":
@@ -904,6 +1011,20 @@ def main(
 
     @app.route("/api/pdfpage", methods=["GET"])
     def pdfpage():
+        """
+        這段程式碼定義了一個名為 pdfpage 的路由，該路由對應於一個 HTTP GET 請求。當用戶訪問 /api/pdfpage 
+        並提供適當的查詢參數（filename、page 和 scale）時，此路由將返回一個 PDF 文件的特定頁面的圖像。
+
+        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。
+        get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；
+        否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
+
+        然後，程式碼從請求的查詢參數中獲取 page 和 scale，並使用這兩個參數
+        以及剛剛獲取的文件內容來生成 PDF 文件的特定頁面的圖像。
+
+        最後，程式碼將圖像保存為 PNG 格式，並將其作為 HTTP 響應的內容返回給用戶。
+        響應的 Content-Type 頭部被設置為 image/png，以告訴用戶響應的內容是一個 PNG 圖像。
+        """
         filename = request.args.get("filename")
         content = get_content(filename)
         page = request.args.get("page")
@@ -930,6 +1051,14 @@ def main(
         filename = request.args.get("filename")
         return jsonify(documents[filename].text_chunks)
 
+    # 這段程式碼是在一個條件下運行 Flask 應用程式的服務器。如果 no_server 變數為 False，則會嘗試運行服務器。
+    # app.run(host=host, port=port) 這行程式碼會啟動一個服務器，並且將其綁定到指定的主機地址和端口。
+
+    # 如果在啟動服務器時發生 SystemExit 異常，則會捕獲該異常並進行處理。
+    # 如果端口是預設端口，則會引發一個新的異常，並建議用戶嘗試再次運行並使用 --port <port> 命令來指定一個不同的端口。
+    # 如果端口不是預設端口，則會引發一個新的異常，並建議用戶嘗試指定一個不同的端口。
+
+    # 這段程式碼的目的是為了處理在啟動服務器時可能會遇到的端口衝突問題。
     if not no_server:
         try:
             app.run(host=host, port=port)
