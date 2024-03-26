@@ -7,6 +7,21 @@ HASH_LENGTH = 24
 
 
 def file_md5(filename):
+    """
+    這段程式碼定義了一個名為 file_md5 的函數，該函數用於計算給定文件的 MD5 哈希值。
+
+    首先，它創建了一個新的 MD5 哈希對象 hash_md5。
+
+    然後，它使用 with 語句打開文件，這樣可以確保文件在操作完成後被正確關閉。文件以二進制讀取模式（"rb"）打開。
+
+    接著，它使用 iter 函數和一個 lambda 函數來讀取文件的每一塊。這個 lambda 函數每次調用時都會讀取 4096 位元組的數據。當 f.read(4096) 返回空位元組（b""）時，iter 函數會停止迭代。
+
+    對於文件的每一塊，它都會使用 hash_md5.update 方法來更新哈希對象。
+
+    最後，它使用 hash_md5.hexdigest 方法來獲取哈希對象的十六進制表示，並返回前 HASH_LENGTH 個字符。
+
+    這個函數的主要用途是計算文件的 MD5 哈希值，這可以用於檢查文件的完整性或唯一性。
+    """
     hash_md5 = hashlib.md5()
     with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -85,11 +100,12 @@ def read_embedding(chunk, num_dimensions):
         embedding.append(struct.unpack("f", chunk[i * 4 : (i + 1) * 4])[0])
     return embedding
 
-# Annoy（Approximate Nearest Neighbors Oh Yeah）是一種用於搜索近似最近鄰的C++庫，由Spotify開發。
-# 它可以快速查詢大量數據點之間的相似性，並且在內存使用和查詢速度之間提供了一種平衡。
-# 在這段程式碼中，Annoy被用來存儲和查詢詞嵌入，這些詞嵌入是由模型生成的，用於表示文本中的詞彙。
 def write_annoy_db(filename, num_dimensions, embeddings, num_trees):
     """
+    Annoy（Approximate Nearest Neighbors Oh Yeah）是一種用於搜索近似最近鄰的C++庫，由Spotify開發。
+    它可以快速查詢大量數據點之間的相似性，並且在內存使用和查詢速度之間提供了一種平衡。
+    在這段程式碼中，Annoy被用來存儲和查詢詞嵌入，這些詞嵌入是由模型生成的，用於表示文本中的詞彙。
+
     這段程式碼的功能是將嵌入寫入Annoy數據庫。Annoy是一種用於搜索近似最近鄰的C++庫，由Spotify開發。在這段程式碼中，Annoy被用來存儲和查詢詞嵌入，這些詞嵌入是由模型生成的，用於表示文本中的詞彙。
 
     讓我們逐行解釋這段程式碼：
@@ -186,25 +202,21 @@ def get_num_embeddings(embeddings_filename, num_dimensions):
 
 def read_embeddings_file(embeddings_filename, num_dimensions, capacity):
     """
-    這段程式碼是從一個檔案中讀取詞嵌入（embeddings）的函數。詞嵌入是一種將詞彙轉換為數字向量的技術，這些向量可以捕捉詞彙之間的語義關係。
+    這段程式碼的功能是讀取一個嵌入文件，並將其內容載入到一個NumPy數組中。這裡的嵌入通常指的是用於表示詞彙的向量。以下是對這段程式碼的逐行解釋：
 
-    以下是該函數的步驟：
+        1. num_embeddings = min(get_num_embeddings(embeddings_filename, num_dimensions), capacity): 這行程式碼首先調用get_num_embeddings函數來計算嵌入文件中的嵌入數量，然後與capacity參數比較，取兩者之間的最小值。這樣做的目的是確保我們不會嘗試讀取超過我們能夠處理的嵌入數量。
 
-    計算詞嵌入的數量。這裡使用了min函數來確保詞嵌入的數量不會超過預先設定的容量。
+        2. with open(embeddings_filename, "ab") as f: f.truncate(num_embeddings * num_dimensions * 4): 這兩行程式碼打開嵌入文件，並將其大小截斷為我們實際需要讀取的嵌入數量。這裡的num_embeddings * num_dimensions * 4是因為每個嵌入都是一個浮點數的向量，每個浮點數佔用4個字節。
 
-    使用open函數以二進制模式打開檔案，並使用truncate方法將檔案大小調整為預期的大小。這裡的預期大小是詞嵌入的數量乘以每個詞嵌入的維度數乘以4（因為每個浮點數需要4個位元組）。
+        3. if num_embeddings == 0: return np.zeros((capacity, num_dimensions), dtype="float32"), 0: 如果嵌入數量為0，則返回一個形狀為(capacity, num_dimensions)、填充為0的NumPy數組，以及嵌入數量0。
 
-    如果詞嵌入的數量為0，則返回一個形狀為（容量，維度數）的全零數組。
+        4. read_embeddings = np.memmap(embeddings_filename, dtype="float32", mode="r", shape=(num_embeddings, num_dimensions)): 這行程式碼使用NumPy的memmap函數將嵌入文件映射到記憶體中。這樣可以讓我們在不將整個文件載入記憶體的情況下讀取文件的任何部分。
 
-    使用np.memmap函數將檔案映射到記憶體中。這樣可以在不將整個檔案加載到記憶體的情況下讀取檔案。
+        5. embeddings = np.zeros((capacity, num_dimensions), dtype="float32"): 這行程式碼創建一個形狀為(capacity, num_dimensions)、填充為0的NumPy數組。
 
-    創建一個形狀為（容量，維度數）的全零數組。
+        6. embeddings[:num_embeddings] = read_embeddings[:num_embeddings]: 這行程式碼將從文件中讀取的嵌入複製到新創建的NumPy數組中。
 
-    將原始詞嵌入複製到新的數組中。
-
-    返回詞嵌入數組和詞嵌入的數量。
-
-    這個函數可以用於讀取大型詞嵌入檔案，並將其轉換為可以在Python中使用的數組。
+        7. return embeddings, num_embeddings: 最後，這行程式碼返回新創建的NumPy數組，以及實際讀取的嵌入數量。
     """
     # Calculate the number of embeddings
     num_embeddings = min(

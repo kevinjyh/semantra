@@ -61,11 +61,11 @@ class Document:
     """
     這是一個名為Document的類別，它用於表示一個文檔。這個類別有以下的屬性和方法：
 
-    __init__：這是初始化方法，用於設定文檔的各種屬性，如檔案名稱、MD5值、Semantra目錄、基礎檔案名稱、配置、嵌入檔案名稱、是否使用Annoy、Annoy檔案名稱、窗口、偏移量、代幣檔案名稱、嵌入維度數和編碼。
+    __init__：這是初始化方法，用於設定文檔的各種屬性，如檔案名稱、MD5值、Semantra目錄、基礎檔案名稱、配置、嵌入檔案名稱、是否使用Annoy、Annoy檔案名稱、窗口、偏移量、tokens檔案名稱、嵌入維度數和編碼。
 
     content：這是一個屬性，用於獲取文檔的內容。
 
-    text_chunks：這是一個屬性，用於讀取代幣檔案並將其解析為JSON格式。
+    text_chunks：這是一個屬性，用於讀取tokens檔案並將其解析為JSON格式。
 
     num_embeddings：這是一個屬性，用於獲取嵌入的數量。
 
@@ -297,6 +297,25 @@ def process(
             with open(embeddings_filename, "ab") as f:
 
                 def flush_pool():
+                    """
+                    這段程式碼的主要功能是將一組待處理的詞彙（pool）通過模型進行嵌入，並將結果寫入文件。以下是詳細的步驟：
+
+                        1.檢查詞彙池（pool）是否有內容。如果有，則進行下一步；如果沒有，則不進行任何操作。
+
+                        2.使用模型對詞彙池中的詞彙進行嵌入，得到嵌入結果（embedding_results）。
+
+                        3.檢查嵌入結果是否有"cpu"方法。如果有，則調用該方法將嵌入結果轉移到CPU。
+
+                        4.將嵌入結果存儲到嵌入列表（embeddings）中的適當位置。這裡的位置由嵌入索引（embedding_index）和詞彙池的大小（len(pool)）決定。
+
+                        5.遍歷嵌入結果，對每個嵌入調用write_embedding函數，將其寫入文件。
+
+                        6.更新嵌入索引，將其增加詞彙池的大小。
+
+                        7.清空詞彙池，並將詞彙池的詞彙數量（pool_token_count）重置為0。
+
+                    這段程式碼的主要目的是將一組詞彙進行嵌入，並將嵌入結果寫入文件，以便後續的處理和分析。
+                    """
                     nonlocal pool, pool_token_count, embeddings, embedding_index, f
 
                     if len(pool) > 0:
@@ -704,6 +723,23 @@ def main(
     cached_content_filename = None
 
     def get_content(filename):
+        """
+        這段Python程式碼定義了一個名為get_content的函數，該函數用於從指定的文件中獲取內容。這個函數使用了一種稱為"快取"的技術來提高效率。
+
+        以下是這段程式碼的詳細解釋：
+
+            1. nonlocal cached_content, cached_content_filename：這行程式碼聲明了cached_content和cached_content_filename兩個變數為非局部變數。這意味著這兩個變數在這個函數外部也有定義，並且在這個函數中對它們的修改會影響到外部的值。
+
+            2. if filename == cached_content_filename：這行程式碼檢查輸入的文件名是否與快取中的文件名相同。如果相同，則直接返回快取的內容。
+
+            3. content = documents[filename].content：這行程式碼從documents字典中獲取指定文件的內容。
+
+            4. cached_content_filename = filename和cached_content = content：這兩行程式碼將新獲取的文件名和內容保存到快取中。
+
+            5. return content：這行程式碼返回獲取的文件內容。
+
+        這種使用快取的方式可以避免重複讀取同一文件，從而提高程式的運行效率。
+        """
         nonlocal cached_content, cached_content_filename
         # Check if we can pull from cache
         if filename == cached_content_filename:
@@ -950,6 +986,18 @@ def main(
 
         # Find hot-spots within the result tokens
         def get_splits(divide_factor=2, num_splits=3, start=0, end=len(tokens)):
+            """
+            這段Python程式碼定義了一個名為get_splits的函數，該函數用於將一個範圍（由start和end參數定義）分割成多個子範圍。這個函數有四個參數：
+
+                - divide_factor：用於計算窗口長度的除數。窗口長度是每個子範圍的最大長度。
+                - num_splits：要創建的子範圍的數量。
+                - start：範圍的起始點。
+                - end：範圍的結束點。
+
+            函數首先計算窗口長度和分割長度，然後創建一個空列表splits。接著，它進行一個迴圈，每次迴圈都計算一個子範圍的起始點和結束點，並將這個子範圍添加到splits列表中。子範圍的結束點是起始點加上窗口長度，但不能超過範圍的結束點end。
+
+            最後，函數返回splits列表，該列表包含了所有的子範圍。
+            """
             window_length = math.ceil((end - start) / divide_factor)
             split_length = math.ceil((end - start) / num_splits)
             splits = []
@@ -967,6 +1015,19 @@ def main(
             return join_text_chunks(tokens[:start] + tokens[end:])
 
         def get_highest_ranked_split(splits):
+            """
+            這段程式碼的主要功能是找出一系列分割點（splits）中，與目前的詞嵌入（embedding）最相似的分割點。以下是詳細的步驟：
+
+                1. split_queries：這一行程式碼將每個分割點轉換為一個查詢，查詢的內容是除了分割點之外的所有詞彙。
+
+                2. split_windows：這一行程式碼將每個查詢轉換為一個詞嵌入向量。這是通過模型的embed_document方法來實現的。
+
+                3. distances：這一行程式碼計算每個詞嵌入向量與目前的詞嵌入的餘弦距離。餘弦距離是一種衡量兩個向量相似度的方法，其值範圍為-1到1，值越大表示相似度越高。
+
+                4. 最後一行程式碼將分割點和對應的距離打包成元組，然後按照距離的大小進行排序，並返回排序後的結果。這樣，最相似的分割點將被放在最前面。
+
+            這段程式碼的主要用途可能是在處理自然語言數據時，找出與某個詞彙或短語最相似的其他詞彙或短語。
+            """
             nonlocal tokens, embedding
             split_queries = [exclude_window(start, end) for start, end in splits]
             split_windows = np.array(
@@ -982,12 +1043,40 @@ def main(
             return sorted(zip(splits, distances), key=lambda x: x[1], reverse=False)
 
         def as_tokens(splits):
+            """
+            這段程式碼的主要功能是將一段文本分割成多個部分，並標記每個部分的類型。以下是詳細的步驟：
+
+                1. indices：這一行程式碼將每個分割點的起始位置提取出來，並按照起始位置的大小進行排序。
+
+                2. append：這是一個內部函數，用於將指定範圍的文本添加到chunks列表中。它會檢查起始位置是否小於結束位置，如果是，則將這段文本和對應的類型打包成一個字典，並添加到chunks列表中。
+
+                3. 在for循环中，程式碼會遍歷每個分割點，並使用append函數將分割點之間的文本添加到chunks列表中。每個分割點都會被標記為"highlight"，而其他部分則被標記為"normal"。
+
+                4. 最後，程式碼會將最後一個分割點到文本結尾的部分添加到chunks列表中。
+
+            這段程式碼的主要用途可能是在處理自然語言數據時，將文本分割成多個部分，並標記每個部分的類型，以便於後續的處理。
+            """
             nonlocal tokens
             indices = sorted([split[0] for split in splits], key=lambda x: x[0])
             last_index = 0
             chunks = []
 
             def append(start, end, type):
+                """
+                這段Python程式碼定義了一個名為append的函數，該函數接受三個參數：start、end和type。這個函數的主要目的是將一個新的字典添加到chunks列表中。這個字典包含兩個鍵值對：text和type。
+
+                如果start大於或等於end，則函數直接返回，不進行任何操作。這可能是為了防止無效的範圍（即起始位置在結束位置之後）。
+
+                如果start小於end，則函數會執行以下操作：
+
+                    1. 從tokens列表中取出從start到end（不包括end）的元素，並將這些元素連接成一個字符串。這是通過調用join_text_chunks函數實現的。
+
+                    2. 創建一個新的字典，其中text鍵的值是上一步得到的字符串，type鍵的值是函數的第三個參數。
+
+                    3. 將這個新的字典添加到chunks列表的末尾。
+
+                這裡的nonlocal關鍵字表示chunks和tokens是在包含這個函數的外部範疇中定義的變量。
+                """
                 if start >= end:
                     return
                 nonlocal chunks, tokens
