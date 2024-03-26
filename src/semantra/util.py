@@ -127,6 +127,21 @@ def write_annoy_db(filename, num_dimensions, embeddings, num_trees):
 
 
 def load_annoy_db(filename, num_dimensions):
+    """
+    這段程式碼定義了一個名為 load_annoy_db 的函數，該函數用於加載 Annoy 數據庫。
+
+    該函數接受兩個參數：filename 和 num_dimensions。filename 是要加載的 Annoy 數據庫的文件名，num_dimensions 是數據庫中向量的維度。
+
+    在函數內部，首先將 Annoy 庫導入到函數的局部作用域中。這樣做的好處是，如果不需要使用這個函數，則不需要安裝或導入 Annoy 庫，這可以節省記憶體和加載時間。
+
+    然後，使用 AnnoyIndex 類創建一個新的 Annoy 索引。這個索引的維度是 num_dimensions，並使用 "angular" 為距離度量。
+
+    接著，使用 load 方法從 filename 指定的文件中加載 Annoy 索引。
+
+    最後，返回加載的 Annoy 索引。
+
+    這個函數的主要目的是提供一種方便的方式來加載 Annoy 數據庫，並將其作為一個索引返回。
+    """
     # Import annoy here so that it's not required for the CLI
     from annoy import AnnoyIndex
 

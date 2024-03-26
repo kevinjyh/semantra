@@ -58,6 +58,21 @@ TRANSFORMER_POOL_DEFAULT = 15000
 
 
 class Document:
+    """
+    這是一個名為Document的類別，它用於表示一個文檔。這個類別有以下的屬性和方法：
+
+    __init__：這是初始化方法，用於設定文檔的各種屬性，如檔案名稱、MD5值、Semantra目錄、基礎檔案名稱、配置、嵌入檔案名稱、是否使用Annoy、Annoy檔案名稱、窗口、偏移量、代幣檔案名稱、嵌入維度數和編碼。
+
+    content：這是一個屬性，用於獲取文檔的內容。
+
+    text_chunks：這是一個屬性，用於讀取代幣檔案並將其解析為JSON格式。
+
+    num_embeddings：這是一個屬性，用於獲取嵌入的數量。
+
+    embedding_db：這是一個屬性，如果設定了使用Annoy，則會從Annoy數據庫中讀取嵌入；否則，會引發一個ValueError。
+
+    embeddings：這是一個屬性，用於讀取嵌入檔案並返回嵌入的結果。如果讀取的嵌入數量與預期的嵌入數量不符，則會引發一個斷言錯誤。
+    """
     def __init__(
         self,
         filename,
@@ -137,23 +152,19 @@ def process(
     encoding,
 ):
     """
-    處理文本內容並生成相應的詞嵌入（embeddings）的。首先，它會檢查指定的目錄是否存在，如果不存在，則會創建該目錄。
-    然後，它會獲取文件的MD5值和配置信息，並根據這些信息生成一些文件名。
+    處理文本內容並生成相應的詞嵌入（embeddings）的。首先，它會檢查指定的目錄是否存在，如果不存在，則會創建該目錄。然後，它會獲取文件的MD5值和配置信息，並根據這些信息生成一些文件名。
 
-    如果強制重新計算或者詞標記（tokens）文件不存在，則會從原始文本中提取詞標記。這些詞標記會被用來生成文本塊（text chunks），
-    並將其寫入到文件中。如果詞標記文件已經存在，則會直接從文件中讀取文本塊。
+    如果強制重新計算或者詞標記（tokens）文件不存在，則會從原始文本中提取詞標記。這些詞標記會被用來生成文本塊（text chunks），並將其寫入到文件中。如果詞標記文件已經存在，則會直接從文件中讀取文本塊。
 
     接著，程式碼會根據配置參數來獲取嵌入偏移量（embedding offsets）。然後，它會生成一個完整的配置，包含了原始配置以及一些額外的詳細信息。
 
     如果強制重新計算或者配置文件不存在，並且每個詞標記的成本不為None，則會提示用戶詞嵌入的成本。無論如何，都會將完整的配置寫入到配置文件中。
 
-    然後，程式碼會計算詞嵌入。如果詞嵌入文件已經存在，並且不需要使用Annoy或者Annoy文件也存在，則會跳過該步驟。
-    否則，會從文本塊中提取詞標記，並生成詞嵌入。這些詞嵌入會被寫入到文件中，並且如果需要使用Annoy，則還會寫入到Annoy數據庫中。
+    然後，程式碼會計算詞嵌入。如果詞嵌入文件已經存在，並且不需要使用Annoy或者Annoy文件也存在，則會跳過該步驟。否則，會從文本塊中提取詞標記，並生成詞嵌入。這些詞嵌入會被寫入到文件中，並且如果需要使用Annoy，則還會寫入到Annoy數據庫中。
 
     最後，程式碼會返回一個Document對象，該對象包含了所有的配置信息、文件名、詞嵌入等信息。
 
-    在這段程式碼中，還定義了一個Document類，該類包含了一些屬性，如文件名、MD5值、配置信息、詞嵌入文件名等。
-    此外，該類還定義了一些屬性方法，用於獲取文本內容、文本塊、詞嵌入數量、詞嵌入數據庫和詞嵌入等。
+    在這段程式碼中，還定義了一個Document類，該類包含了一些屬性，如文件名、MD5值、配置信息、詞嵌入文件名等。此外，該類還定義了一些屬性方法，用於獲取文本內容、文本塊、詞嵌入數量、詞嵌入數據庫和詞嵌入等。
     """
 
     # Check if semantra dir exists
@@ -353,6 +364,25 @@ def process(
 
 
 def process_windows(windows: str) -> "list[tuple[int, int, int]]":
+    """
+    這是一個名為 process_windows 的函數，它接受一個名為 windows 的字符串參數，並返回一個元組列表。每個元組包含三個整數。
+
+    函數的工作流程如下：
+
+    首先，它會將 windows 字符串按照逗號 (",") 分割，得到一個窗口列表。
+
+    然後，對於列表中的每個窗口，它會檢查窗口是否包含下劃線 ("_")。
+
+    如果窗口包含一個下劃線，那麼它會將窗口按照下劃線分割，並將分割後的兩個部分分別賦值給 size 和 offset。此時，rewind 被設定為 0。
+
+    如果窗口包含兩個下劃線，那麼它會將窗口按照下劃線分割，並將分割後的三個部分分別賦值給 size、offset 和 rewind。
+
+    如果窗口不包含下劃線，那麼它會將窗口的值賦值給 size，並將 offset 和 rewind 都設定為 0。
+
+    最後，函數會生成一個元組，包含 size、offset 和 rewind 這三個整數，並將這個元組添加到返回的列表中。
+
+    這個函數的主要用途是解析 windows 字符串，並將其轉換為一個元組列表，以便於後續的處理。
+    """
     for window in windows.split(","):
         if "_" in window:
             # One or two occurrences?
@@ -577,6 +607,23 @@ def main(
     show_semantra_dir=False,
     semantra_dir=None,  # auto
 ):
+    """
+    這段程式碼是 Python 語言中的一個 main 函數，它是一個命令行工具的主要入口點。該函數接受許多參數，包括文件名、窗口大小、服務器設置、模型選擇等等。
+
+    在函數的開始，它會檢查 version 和 list_models 參數，如果設置了這些參數，它將打印版本信息或模型列表，然後返回。
+
+    接著，它會檢查 semantra_dir 參數，如果未設置，則會使用 click.get_app_dir("Semantra") 獲取應用程序目錄。如果設置了 show_semantra_dir 參數，它將打印 semantra_dir 的值並返回。
+
+    然後，它會從 .env 文件中加載環境變量，並檢查是否提供了 filename 參數。如果沒有提供，則會引發一個錯誤。
+
+    接下來，它會處理窗口大小，並根據 transformer_model 參數的設置來選擇模型。如果設置了 transformer_model，則會使用自定義的轉換器模型，否則，會使用預設的模型。
+
+    然後，它會檢查模型是否與 SVM 兼容，並處理文件名列表，對每個文件進行處理。
+
+    最後，它會啟動一個 Flask 服務器，並定義了幾個路由，包括基本路由、靜態文件路由和 API 路由。
+
+    這個函數的主要目的是處理文件，並在處理後啟動一個服務器，以便用戶可以通過 API 獲取處理結果。
+    """
     if version:
         print(VERSION)
         return
@@ -765,8 +812,7 @@ def main(
     @app.route("/api/querysvm", methods=["POST"])
     def querysvm():
         """
-        這段程式碼是在 Flask 應用中定義一個路由 /api/querysvm，該路由接受 POST 請求。
-        當此路由被訪問時，它會執行 querysvm 函數。
+        這段程式碼是在 Flask 應用中定義一個路由 /api/querysvm，該路由接受 POST 請求。當此路由被訪問時，它會執行 querysvm 函數。
 
         querysvm 函數的主要工作流程如下：
 
@@ -838,17 +884,13 @@ def main(
     @app.route("/api/queryann", methods=["POST"])
     def queryann():
         """
-        這段程式碼是一個 Flask 應用程式的一部分，它定義了一個路由 /api/queryann，
-        該路由接受 POST 請求。當此路由被訪問時，它會執行 queryann 函數。
+        這段程式碼是一個 Flask 應用程式的一部分，它定義了一個路由 /api/queryann，該路由接受 POST 請求。當此路由被訪問時，它會執行 queryann 函數。
 
-        在 queryann 函數中，首先從請求的 JSON 資料中取出 "queries" 和 "preferences"。
-        然後，使用 model.embed_queries_and_preferences 方法來獲取查詢和偏好的嵌入向量。
+        在 queryann 函數中，首先從請求的 JSON 資料中取出 "queries" 和 "preferences"。然後，使用 model.embed_queries_and_preferences 方法來獲取查詢和偏好的嵌入向量。
 
-        接著，對於每個文檔，它會從文檔中取出嵌入數據庫、文本塊和偏移量。
-        然後，使用 embedding_db.get_nns_by_vector 方法來獲取與嵌入向量最接近的結果。
+        接著，對於每個文檔，它會從文檔中取出嵌入數據庫、文本塊和偏移量。然後，使用 embedding_db.get_nns_by_vector 方法來獲取與嵌入向量最接近的結果。
 
-        對於每個結果，它會創建一個包含文本、距離、偏移量、索引、文件名、
-        查詢和偏好的字典，並將其添加到子結果列表中。
+        對於每個結果，它會創建一個包含文本、距離、偏移量、索引、文件名、查詢和偏好的字典，並將其添加到子結果列表中。
 
         最後，它會將所有的結果排序，並將其轉換為 JSON 格式返回。
 
@@ -889,19 +931,13 @@ def main(
     @app.route("/api/explain", methods=["POST"])
     def explain():
         """
-        這段程式碼定義了一個 Flask 應用的路由，該路由對應於一個名為 /api/explain 的 HTTP 端點。
-        當這個端點接收到 POST 請求時，它會執行 explain 函數的內容。
+        這段程式碼定義了一個 Flask 應用的路由，該路由對應於一個名為 /api/explain 的 HTTP 端點。當這個端點接收到 POST 請求時，它會執行 explain 函數的內容。
 
-        explain 函數首先從請求的 JSON 數據中提取出文件名、偏移量、查詢和偏好。
-        然後，它使用這些數據來生成一個嵌入向量，該向量是由模型根據查詢和偏好生成的。
+        explain 函數首先從請求的 JSON 數據中提取出文件名、偏移量、查詢和偏好。然後，它使用這些數據來生成一個嵌入向量，該向量是由模型根據查詢和偏好生成的。
 
-        接下來，函數定義了一些輔助函數，用於對文本進行分割和評分。
-        get_splits 函數將文本分割成多個窗口，exclude_window 函數則將特定窗口的文本從整體文本中排除。
-        get_highest_ranked_split 函數對每個窗口進行評分，並將它們按照評分排序。
-        as_tokens 函數則將這些窗口轉換成一個包含文本和類型的字典列表。
+        接下來，函數定義了一些輔助函數，用於對文本進行分割和評分。get_splits 函數將文本分割成多個窗口，exclude_window 函數則將特定窗口的文本從整體文本中排除。get_highest_ranked_split 函數對每個窗口進行評分，並將它們按照評分排序。as_tokens 函數則將這些窗口轉換成一個包含文本和類型的字典列表。
 
-        最後，函數使用這些輔助函數來找到評分最高的窗口，並將其轉換成字典列表。
-        這個列表然後被轉換成 JSON 格式，並作為 HTTP 響應返回。
+        最後，函數使用這些輔助函數來找到評分最高的窗口，並將其轉換成字典列表。這個列表然後被轉換成 JSON 格式，並作為 HTTP 響應返回。
 
         這段程式碼的主要目的是對給定的文本進行分析，並找出其中與查詢和偏好最相關的部分。
         """
@@ -989,18 +1025,13 @@ def main(
     @app.route("/api/pdfpositions", methods=["GET"])
     def pdfpositions():
         """
-        這段程式碼定義了一個名為 pdfpositions 的路由，該路由對應於一個 HTTP GET 請求。
-        當用戶訪問 /api/pdfpositions 並提供適當的查詢參數（filename）時，此路由將返回一個 PDF 文件的位置信息。
+        這段程式碼定義了一個名為 pdfpositions 的路由，該路由對應於一個 HTTP GET 請求。當用戶訪問 /api/pdfpositions 並提供適當的查詢參數（filename）時，此路由將返回一個 PDF 文件的位置信息。
 
-        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。
-        get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；
-        否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
+        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
 
-        然後，程式碼檢查文件的類型是否為 "pdf"。如果是，則返回文件的位置信息；
-        否則，返回一個空列表。位置信息和空列表都被封裝在一個 JSON 響應中，以便於用戶在客戶端處理。
+        然後，程式碼檢查文件的類型是否為 "pdf"。如果是，則返回文件的位置信息；否則，返回一個空列表。位置信息和空列表都被封裝在一個 JSON 響應中，以便於用戶在客戶端處理。
 
-        這段程式碼的主要用途是提供一種方式，讓用戶能夠獲取 PDF 文件的位置信息，
-        這些信息可能包括每個頁面的大小、每個元素的位置等。
+        這段程式碼的主要用途是提供一種方式，讓用戶能夠獲取 PDF 文件的位置信息，這些信息可能包括每個頁面的大小、每個元素的位置等。
         """
         filename = request.args.get("filename")
         content = get_content(filename)
@@ -1012,18 +1043,13 @@ def main(
     @app.route("/api/pdfpage", methods=["GET"])
     def pdfpage():
         """
-        這段程式碼定義了一個名為 pdfpage 的路由，該路由對應於一個 HTTP GET 請求。當用戶訪問 /api/pdfpage 
-        並提供適當的查詢參數（filename、page 和 scale）時，此路由將返回一個 PDF 文件的特定頁面的圖像。
+        這段程式碼定義了一個名為 pdfpage 的路由，該路由對應於一個 HTTP GET 請求。當用戶訪問 /api/pdfpage並提供適當的查詢參數（filename、page 和 scale）時，此路由將返回一個 PDF 文件的特定頁面的圖像。
 
-        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。
-        get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；
-        否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
+        首先，程式碼從請求的查詢參數中獲取 filename，並使用 get_content 函數獲取相應的文件內容。get_content 函數會檢查文件是否已經在快取中，如果是，則直接從快取中返回文件內容；否則，它會從 documents 字典中獲取文件內容，並將其存入快取。
 
-        然後，程式碼從請求的查詢參數中獲取 page 和 scale，並使用這兩個參數
-        以及剛剛獲取的文件內容來生成 PDF 文件的特定頁面的圖像。
+        然後，程式碼從請求的查詢參數中獲取 page 和 scale，並使用這兩個參數以及剛剛獲取的文件內容來生成 PDF 文件的特定頁面的圖像。
 
-        最後，程式碼將圖像保存為 PNG 格式，並將其作為 HTTP 響應的內容返回給用戶。
-        響應的 Content-Type 頭部被設置為 image/png，以告訴用戶響應的內容是一個 PNG 圖像。
+        最後，程式碼將圖像保存為 PNG 格式，並將其作為 HTTP 響應的內容返回給用戶。響應的 Content-Type 頭部被設置為 image/png，以告訴用戶響應的內容是一個 PNG 圖像。
         """
         filename = request.args.get("filename")
         content = get_content(filename)
@@ -1039,6 +1065,17 @@ def main(
 
     @app.route("/api/pdfchars", methods=["GET"])
     def pdfchars():
+        """
+        這段程式碼定義了一個 Flask 應用的路由，該路由對應於 /api/pdfchars URL，並且只接受 GET 請求。
+
+        在這個路由的處理函數 pdfchars() 中，首先從請求的參數中獲取 filename。然後，使用 get_content(filename) 函數獲取該文件的內容。
+
+        接著，檢查文件的類型是否為 "pdf"。如果不是，則返回一個空的 JSON 陣列。
+
+        如果文件類型是 "pdf"，則從請求的參數中獲取 page，並使用 content.get_page_chars(int(page)) 獲取該頁面的字符。最後，將這些字符轉換為 JSON 格式並返回。
+
+        這個路由的主要目的是提供一個 API，用戶可以通過這個 API 獲取 PDF 文件的特定頁面的字符。
+        """
         filename = request.args.get("filename")
         content = get_content(filename)
         if content.filetype != "pdf":
@@ -1048,17 +1085,19 @@ def main(
 
     @app.route("/api/text", methods=["GET"])
     def text():
+        """
+        這段程式碼是在一個條件下運行 Flask 應用程式的服務器。如果 no_server 變數為 False，則會嘗試運行服務器。app.run(host=host, port=port) 這行程式碼會啟動一個服務器，並且將其綁定到指定的主機地址和端口。
+
+        如果在啟動服務器時發生 SystemExit 異常，則會捕獲該異常並進行處理。如果端口是預設端口，則會引發一個新的異常，並建議用戶嘗試再次運行並使用 --port <port> 命令來指定一個不同的端口。如果端口不是預設端口，則會引發一個新的異常，並建議用戶嘗試指定一個不同的端口。
+        """
         filename = request.args.get("filename")
         return jsonify(documents[filename].text_chunks)
-
-    # 這段程式碼是在一個條件下運行 Flask 應用程式的服務器。如果 no_server 變數為 False，則會嘗試運行服務器。
-    # app.run(host=host, port=port) 這行程式碼會啟動一個服務器，並且將其綁定到指定的主機地址和端口。
-
-    # 如果在啟動服務器時發生 SystemExit 異常，則會捕獲該異常並進行處理。
-    # 如果端口是預設端口，則會引發一個新的異常，並建議用戶嘗試再次運行並使用 --port <port> 命令來指定一個不同的端口。
-    # 如果端口不是預設端口，則會引發一個新的異常，並建議用戶嘗試指定一個不同的端口。
-
-    # 這段程式碼的目的是為了處理在啟動服務器時可能會遇到的端口衝突問題。
+    
+    # 這段程式碼是在啟動 Flask 應用時使用的。如果 no_server 變數為 False，則會嘗試在指定的 host 和 port 上運行應用。
+    # 這裡使用了一個 try/except 區塊來處理可能出現的 SystemExit 異常。如果在運行應用時出現 SystemExit 異常，則會進入 except 區塊。
+    # 在 except 區塊中，首先將 sys.tracebacklimit 設置為 0，這樣在出現異常時，Python 就不會打印出錯誤的回溯信息。
+    # 然後，檢查 port 是否等於 DEFAULT_PORT。如果等於，則引發一個新的異常，並提示用戶嘗試再次運行並使用 --port <port> 命令來指定一個不同的端口。如果 port 不等於 DEFAULT_PORT，則引發一個新的異常，並提示用戶嘗試指定一個不同的端口。
+    # 這段程式碼的主要目的是處理在啟動 Flask 應用時可能出現的 SystemExit 異常，並給出相應的錯誤提示。
     if not no_server:
         try:
             app.run(host=host, port=port)

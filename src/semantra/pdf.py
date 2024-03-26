@@ -16,6 +16,17 @@ def get_mutex(filename):
 
 
 class PDFContent:
+    """
+    這類別定義了一個名為 PDFContent 的類別，該類別用於處理 PDF 文件的內容。
+
+    在 __init__ 方法中，初始化了一些實例變數，如 rawtext（原始文本）、filename（文件名）、positions（位置）、pdfium（PDF 文件對象）、mutex（互斥鎖）、filetype（文件類型）等。
+
+    get_page_image_pil 方法用於將 PDF 文件的特定頁面轉換為 PIL（Python Imaging Library）圖像。該方法首先獲取指定的 PDF 頁面，然後渲染該頁面，最後將渲染後的位圖對象轉換為 PIL 圖像對象並返回。
+
+    get_page_chars 方法用於從 PDF 文件的特定頁面中提取字符及其對應的邊界框。該方法首先獲取指定的 PDF 頁面，然後獲取該頁面的文本頁面對象，接著獲取該頁面上的字符數量，然後獲取每個字符的邊界框，最後獲取每個字符的文本，並將字符和其對應的邊界框一起返回。
+
+    這個類別的主要用途是在 Python 中處理 PDF 文件，尤其是將 PDF 頁面轉換為圖像，以及提取 PDF 頁面上的字符及其邊界框，以便進一步處理或分析。
+    """
     def __init__(self, rawtext, filename, positions):
         self.rawtext = rawtext
         self.filename = filename
