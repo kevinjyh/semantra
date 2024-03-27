@@ -78,7 +78,7 @@ class PDFContent:
             page = self.pdfium[page_number]
             textpage = page.get_textpage()
             num_chars = textpage.count_chars()
-            char_boxes = [textpage.get_charbox(i) for i in range(num_chars)]
+            char_boxes = [textpage.get_charbox(i) for i in range(num_chars)] # TODO: 抓取字元的邊界框
             chars = [
                 textpage.get_text_range(index=i, count=1) for i in range(num_chars)
             ]

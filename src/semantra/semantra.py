@@ -1161,7 +1161,7 @@ def main(
 
         接著，檢查文件的類型是否為 "pdf"。如果不是，則返回一個空的 JSON 陣列。
 
-        如果文件類型是 "pdf"，則從請求的參數中獲取 page，並使用 content.get_page_chars(int(page)) 獲取該頁面的字符。最後，將這些字符轉換為 JSON 格式並返回。
+        如果文件類型是 "pdf"，則從請求的參數中獲取 page，並使用 content.get_page_chars(int(page)) 獲取該頁面的字符及其對應的邊界框。最後，將這些字符轉換為 JSON 格式並返回。
 
         這個路由的主要目的是提供一個 API，用戶可以通過這個 API 獲取 PDF 文件的特定頁面的字符。
         """
